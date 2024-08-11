@@ -1,8 +1,9 @@
 package app
 
 import (
-	"github.com/jmoiron/sqlx"
 	"log"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type IAPI interface {

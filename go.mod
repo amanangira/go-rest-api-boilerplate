@@ -9,10 +9,9 @@ require (
 	github.com/go-chi/cors v1.2.1
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.4.0
+	github.com/lib/pq v1.10.7
 	gitlab.com/tozd/go/errors v0.4.1
+	golang.org/x/crypto v0.25.0
 )
 
-require (
-	github.com/lib/pq v1.10.7 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
-)
+require github.com/pkg/errors v0.9.1 // indirect

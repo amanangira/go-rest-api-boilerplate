@@ -1,39 +1,31 @@
 package middleware
 
 import (
+	"boilerplate/app"
 	"context"
 	"database/sql"
 	"fmt"
-	"gitlab.com/tozd/go/errors"
 	"net/http"
 	"strings"
-	"superman/api"
-	"superman/api/api_error"
-	"superman/external/cognito"
+
+	"boilerplate/app/app_error"
+
+	"gitlab.com/tozd/go/errors"
 )
 
 const authorizationHeader = "Authorization"
 const contextUserIDKey = "user_id"
 
-func AuthorizedCognitoUserID(r *http.Request) (*cognito.Claims, error) {
+func AuthorizedCognitoUserID(r *http.Request) (string, error) {
 	//token
+	var userID string
 	idTokenString := stripBearerToken(r.Header.Get(authorizationHeader))
-	jwk, jwkErr := api.DefaultJWK()
-	if jwkErr != nil {
-		return nil, jwkErr
-	}
+	// TODO - parse and return user ID from authorization header
 
-	token, parseErr := jwk.ParseJWT(idTokenString)
-	if parseErr != nil {
-		return nil, parseErr
-	}
+	// TODO - temporarily hold token and user ID in DB
+	userID = idTokenString
 
-	claims, claimParseErr := cognito.ParseClaims(token.Claims)
-	if claimParseErr != nil {
-		return nil, claimParseErr
-	}
-
-	return claims, nil
+	return userID, nil
 }
 
 func stripBearerToken(token string) string {
@@ -51,19 +43,18 @@ func stripBearerToken(token string) string {
 //TODO - Consider decoupling from IAPI and instead implement a middleware interface that can be implemented by a struct
 // that would hold any dependencies for that particular middleware following isolation and decouple design
 
-func ApplyBasicAuthorizer(api api.IAPI) func(http.Handler) http.Handler {
+func ApplyBasicAuthorizer() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			claims, cognitoUserIDErr := AuthorizedCognitoUserID(r)
+			dbUserID, cognitoUserIDErr := AuthorizedCognitoUserID(r)
 
-			if claims == nil {
-				api_error.NewError(cognitoUserIDErr, http.StatusUnauthorized, "").Log().HttpError(w)
+			if cognitoUserIDErr != nil {
+				app_error.NewError(cognitoUserIDErr, http.StatusUnauthorized, "").Log().HttpError(w)
 				return
 			}
 
 			var count int
-			dbUserID := claims.CognitoUsername
-			queryErr := api.
+			queryErr := app.
 				GetDBClient().
 				GetContext(
 					r.Context(),
@@ -72,17 +63,17 @@ func ApplyBasicAuthorizer(api api.IAPI) func(http.Handler) http.Handler {
 					dbUserID)
 
 			if queryErr != nil && queryErr != sql.ErrNoRows {
-				api_error.NewError(queryErr, http.StatusInternalServerError, "").Log().HttpError(w)
+				app_error.NewError(queryErr, http.StatusInternalServerError, "").Log().HttpError(w)
 				return
 			}
 
 			if queryErr == sql.ErrNoRows || count < 1 {
-				api_error.NewError(errors.New("db user with Cognito username not found"), http.StatusUnauthorized, "").Log().HttpError(w)
+				app_error.NewError(errors.New("db user with Cognito username not found"), http.StatusUnauthorized, "").Log().HttpError(w)
 				return
 			}
 
 			if cognitoUserIDErr != nil {
-				api_error.NewError(cognitoUserIDErr, http.StatusUnauthorized, "").Log().HttpError(w)
+				app_error.NewError(cognitoUserIDErr, http.StatusUnauthorized, "").Log().HttpError(w)
 				return
 			}
 

@@ -2,9 +2,10 @@ package middleware
 
 import (
 	"net/http"
-	"superman/api"
+
+	"boilerplate/app"
 )
 
 type IMiddleware interface {
-	Apply(a api.IAPI) func(http.Handler) http.Handler
+	Apply(a app.IAPI) func(http.Handler) http.Handler
 }

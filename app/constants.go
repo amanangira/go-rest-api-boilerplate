@@ -17,4 +17,5 @@ const (
 	EnvDBPasswordKey   = "POSTGRESQL_PASSWORD"
 	EnvDBPortKey       = "POSTGRESQL_PORT"
 	EnvDBNameKey       = "POSTGRESQL_DB"
+	EnvDBSSLMode       = "POSTGRESQL_SSL_MODE"
 )
